@@ -6,37 +6,41 @@ const jwt = require("jsonwebtoken");
 
 const User = require("../../modal/User");
 
-// @route   POST /create-user
+// @route   POST /api/user
 // @desc    Create a new user
 // @access  Public
 router.route("/").post((req, res) => {
   const { userName, email, password } = req.body;
 
-  var newUser = new User({
-    userName: userName,
-    email: email,
-    password: password,
-  });
+  User.find({ email }).then((user) => {
+    if (user) return res.status(400).json({ error: "Email already exists!" });
 
-  bcrypt.genSalt((err, salt) => {
-    bcrypt.hash(newUser.password, salt, (err, hash) => {
-      if (err) throw err;
+    var newUser = new User({
+      userName: userName,
+      email: email,
+      password: password,
+    });
 
-      newUser.password = hash;
-      newUser.save().then((user) =>
-        jwt.sign(
-          { id: user.id },
-          config.get("jwt-secret"),
-          { expiresIn: "1h" },
-          (err, token) => {
-            if (err) throw err;
-            res.status(400).json({
-              msg: "successfully created new user",
-              token: token,
-            });
-          }
-        )
-      );
+    bcrypt.genSalt((err, salt) => {
+      bcrypt.hash(newUser.password, salt, (err, hash) => {
+        if (err) throw err;
+
+        newUser.password = hash;
+        newUser.save().then((user) =>
+          jwt.sign(
+            { id: user.id },
+            config.get("jwt-secret"),
+            { expiresIn: "1h" },
+            (err, token) => {
+              if (err) throw err;
+              res.status(400).json({
+                msg: "successfully created new user",
+                token: token,
+              });
+            }
+          )
+        );
+      });
     });
   });
 });
